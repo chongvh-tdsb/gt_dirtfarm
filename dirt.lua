@@ -78,16 +78,29 @@ end
 
 function clearSide()
     local function clearColumn(column)
+        -- nothing to do on this side? skip without walking there at all
+        local dirty = false
         for tiley = 24, 53 do
-            if GetTile(column, tiley).bg == 14 or GetTile(column + 1, tiley).bg == 14 then
+            if GetTile(column, tiley).bg ~= 0 or GetTile(column + 1, tiley).bg ~= 0 then
+                dirty = true
+                break
+            end
+        end
+        if not dirty then
+            return
+        end
+
+        for tiley = 24, 53 do
+            if GetTile(column, tiley).bg ~= 0 or GetTile(column + 1, tiley).bg ~= 0 then
                 FindPath(column, tiley - 1)
-                while GetTile(column, tiley).bg == 14 do
-                    punch(column, tiley)
-                    Sleep(190)
-                end
-                while GetTile(column + 1, tiley).bg == 14 do
-                    punch(column + 1, tiley)
-                    Sleep(190)
+                Sleep(150)
+                for _, c in ipairs({column, column + 1}) do
+                    local tries = 0
+                    while GetTile(c, tiley).bg ~= 0 and tries < 8 do
+                        punch(c, tiley)
+                        Sleep(190)
+                        tries = tries + 1
+                    end
                 end
                 collect(3)
             end
@@ -103,9 +116,11 @@ function clearDirt()
                 FindPath(tilex - 1,tiley)
                 Sleep(100)
                 for i = -2, 2, 2 do
-                    while GetTile(tilex,tiley+i).bg ~= 0 do
+                    local tries = 0
+                    while GetTile(tilex,tiley+i).bg ~= 0 and tries < 8 do
                         punch(tilex,tiley+i)
                         sleep(190)
+                        tries = tries + 1
                     end
                     collect(3)
                 end
@@ -117,9 +132,11 @@ function clearDirt()
                     FindPath(tilex + 1,tiley + 6)
                     sleep(100)
                     for i = 4, 8, 2 do
-                        while GetTile(tilex,tiley+i).bg ~= 0 do
+                        local tries = 0
+                        while GetTile(tilex,tiley+i).bg ~= 0 and tries < 8 do
                             punch(tilex,tiley+i)
                             sleep(190)
+                            tries = tries + 1
                         end
                         collect(3)
                     end
@@ -130,17 +147,28 @@ function clearDirt()
 end
 
 function breakLava()
+    local lava = {}
     for _,tile in pairs(GetTiles()) do
         if tile.fg == 4 then
-            FindPath(tile.x,tile.y-1)
-            Sleep(100)
-            while GetTile(tile.x,tile.y).fg == 4 do
-                punch(tile.x,tile.y)
+            lava[#lava + 1] = {x = tile.x, y = tile.y}
+        end
+    end
+
+    for _,t in ipairs(lava) do
+        if GetTile(t.x,t.y).fg == 4 then
+            FindPath(t.x,t.y-1)
+            Sleep(150)
+            local tries = 0
+            while GetTile(t.x,t.y).fg == 4 and tries < 8 do
+                punch(t.x,t.y)
                 sleep(190)
+                tries = tries + 1
             end
-            while GetTile(tile.x,tile.y).fg == 0 do
-                place(tile.x,tile.y,2)
+            tries = 0
+            while GetTile(t.x,t.y).fg == 0 and tries < 8 do
+                place(t.x,t.y,2)
                 sleep(190)
+                tries = tries + 1
             end
         end
     end
@@ -157,33 +185,33 @@ end
 
 function placeDirt()
     for tiley = 24, 2, -2 do
-        for tilex = 4, 97, 5 do
+        for tilex = 4, 92, 5 do
             if checkEmpty(tilex,tiley) then
                 FindPath(tilex,tiley+1)
                 Sleep(100)
                 for i = 1, 5 do
-                    if (tilex-3)+i <= 97 then
-                        if GetTile((tilex-3)+i,tiley).fg == 0  then
-                            while GetTile((tilex-3)+i,tiley).fg == 0 do
-                                place((tilex-3)+i,tiley,2)
-                                sleep(190)
-                            end
+                    if (tilex-3)+i <= 92 then
+                        local tries = 0
+                        while GetTile((tilex-3)+i,tiley).fg == 0 and tries < 8 do
+                            place((tilex-3)+i,tiley,2)
+                            sleep(190)
+                            tries = tries + 1
                         end
                     end
                 end
             end
         end
-        for tilex = 97, 4, 5 do
+        for tilex = 92, 4, -5 do
             if checkEmpty(tilex,tiley-2) then
                 FindPath(tilex,tiley-1)
                 Sleep(100)
                 for i = 1, 5 do
-                    if (tilex-3)+i ~= 98 or (tilex-3)+i ~= 99 then
-                        if GetTile((tilex-3)+i,tiley-2).fg == 0  then
-                            while GetTile((tilex-3)+i,tiley-2).fg == 0 do
-                                place((tilex-3)+i,tiley-2,2)
-                                sleep(190)
-                            end
+                    if (tilex-3)+i <= 92 then
+                        local tries = 0
+                        while GetTile((tilex-3)+i,tiley-2).fg == 0 and tries < 8 do
+                            place((tilex-3)+i,tiley-2,2)
+                            sleep(190)
+                            tries = tries + 1
                         end
                     end
                 end
